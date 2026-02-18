@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SKU Matching Tool</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <h1>SKU Matching Tool</h1>
+      <p>Paste TSV data, auto-detect columns, run master-aware exact matching, and copy results.</p>
+    </header>
+
+    <section id="alertBox" class="alert-box hidden" aria-live="polite"></section>
+
+    <div class="dataset-grid">
+      <section class="card">
+        <div class="card-head">
+          <h2>transfer_sku</h2>
+          <button id="parseTransferBtn" class="btn btn-primary" type="button">Parse</button>
+        </div>
+        <textarea id="transferInput" class="input-area" placeholder="Paste transfer_sku TSV with headers"></textarea>
+        <div id="transferMeta" class="meta"></div>
+        <div id="transferPreview" class="preview-wrap"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>new_sku</h2>
+          <button id="parseTargetBtn" class="btn btn-primary" type="button">Parse</button>
+        </div>
+        <textarea id="targetInput" class="input-area" placeholder="Paste new_sku TSV with headers"></textarea>
+        <div id="targetMeta" class="meta"></div>
+        <div id="targetPreview" class="preview-wrap"></div>
+      </section>
+    </div>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Synonym Rules</h2>
+        <button id="addMasterScopeBtn" class="btn btn-primary" type="button">Add MasterCode</button>
+      </div>
+      <div id="synonymSummaryBar" class="section-summary-bar hidden"></div>
+      <div id="synonymScopesContainer" class="synonym-scopes"></div>
+      <p class="hint">Priority: EXACT, then CONTAINS, then REGEX. Matching is only applied within the same attribute
+        name. Use bulk add when an attribute has many options.</p>
+    </section>
+
+    <section class="card">
+      <h2>Run Matching</h2>
+      <div class="action-row">
+        <button id="runBtn" class="btn btn-accent" type="button" disabled>Run Matching</button>
+        <button id="copyBtn" class="btn btn-secondary" type="button" disabled>Copy Results as TSV</button>
+        <button id="downloadCsvBtn" class="btn btn-secondary" type="button" disabled>Download as CSV</button>
+      </div>
+      <div id="modeInfo" class="meta"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Results</h2>
+        <div id="resultSummary" class="summary"></div>
+      </div>
+      <div id="resultsContainer" class="results-wrap"></div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
