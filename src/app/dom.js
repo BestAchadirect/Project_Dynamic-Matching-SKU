@@ -1,0 +1,22 @@
+export const dom = {
+  transferInput: document.getElementById("transferInput"),
+  targetInput: document.getElementById("targetInput"),
+  addMasterScopeBtn: document.getElementById("addMasterScopeBtn"),
+  synonymScopesContainer: document.getElementById("synonymScopesContainer"),
+  parseTransferBtn: document.getElementById("parseTransferBtn"),
+  parseTargetBtn: document.getElementById("parseTargetBtn"),
+  transferNoHeader: document.getElementById("transferNoHeader"),
+  targetNoHeader: document.getElementById("targetNoHeader"),
+  runBtn: document.getElementById("runBtn"),
+  copyBtn: document.getElementById("copyBtn"),
+  downloadCsvBtn: document.getElementById("downloadCsvBtn"),
+  transferMeta: document.getElementById("transferMeta"),
+  targetMeta: document.getElementById("targetMeta"),
+  transferPreview: document.getElementById("transferPreview"),
+  targetPreview: document.getElementById("targetPreview"),
+  modeInfo: document.getElementById("modeInfo"),
+  resultsContainer: document.getElementById("resultsContainer"),
+  resultSummary: document.getElementById("resultSummary"),
+  alertBox: document.getElementById("alertBox"),
+  synonymSummaryBar: document.getElementById("synonymSummaryBar")
+};

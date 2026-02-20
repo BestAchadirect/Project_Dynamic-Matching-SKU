@@ -1,0 +1,8 @@
+{
+  "name": "project-sku",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/parser.test.js && node tests/matching.test.js && node tests/synonym-filter.test.js"
+  }
+}

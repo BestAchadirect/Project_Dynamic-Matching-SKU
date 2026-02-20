@@ -105,7 +105,27 @@ Copies the same 6 columns above.
 - Unexpected `NO_MATCH`:
   - Check Master Code values and synonym rules.
 
-## Files
-- `index.html`
-- `style.css`
-- `script.js`
+## Project Structure
+- `index.html` - static page entry.
+- `style.css` - styles.
+- `src/main.js` - app orchestration.
+- `src/app/` - app-level state, DOM bindings, event wiring.
+- `src/core/` - shared constants, normalization, utility helpers, JSDoc types.
+- `src/features/parser/` - TSV parsing and column detection.
+- `src/features/synonym/` - synonym scope UI/state and rule compilation.
+- `src/features/matching/` - target indexing, candidate filtering, matching engine.
+- `src/features/results/` - rendering, summary text, TSV/CSV export helpers.
+- `tests/` - Node smoke tests for parser, matching, and multi-select filtering.
+
+## Development and Tests
+- Browser run (no build):
+  - Open `index.html` directly.
+- Smoke tests:
+  - `npm test`
+
+## Contributor Guidance
+- Put parsing changes in `src/features/parser/*`.
+- Put matching logic changes in `src/features/matching/*`.
+- Put synonym scope/rule behavior in `src/features/synonym/*`.
+- Keep `src/main.js` thin: wire actions and call feature modules.
+- Add/update tests in `tests/` whenever matching or parsing behavior changes.
