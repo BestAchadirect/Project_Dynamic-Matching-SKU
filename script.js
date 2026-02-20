@@ -3,6 +3,21 @@
 const GLOBAL_GROUP_KEY = "__GLOBAL__";
 const PREVIEW_LIMIT = 10;
 const STRICT_SYNONYM_MODE = false;
+const NO_HEADER_DEFAULT_HEADERS = [
+  "Master Code",
+  "Old Code",
+  "Sku",
+  "In/Out stock/NC",
+  "Status",
+  "#1 Attribute",
+  "#1 Option",
+  "#2 Attribute",
+  "#2 Option",
+  "Base Price",
+  "Price",
+  "Weight",
+  "Cost"
+];
 
 const state = {
   transfer: null,
@@ -19,6 +34,8 @@ const dom = {
   synonymScopesContainer: document.getElementById("synonymScopesContainer"),
   parseTransferBtn: document.getElementById("parseTransferBtn"),
   parseTargetBtn: document.getElementById("parseTargetBtn"),
+  transferNoHeader: document.getElementById("transferNoHeader"),
+  targetNoHeader: document.getElementById("targetNoHeader"),
   runBtn: document.getElementById("runBtn"),
   copyBtn: document.getElementById("copyBtn"),
   downloadCsvBtn: document.getElementById("downloadCsvBtn"),
@@ -1034,14 +1051,17 @@ function rebuildScopeAttributeFilterControls(scopeEl, scopeState) {
     return;
   }
 
-  const sourceCatalogForFilter = buildCatalogForScope(scopeState, "source", { applyAttributeFilter: false });
-  const attributeOptions = mapCatalogAttributesToOptions(sourceCatalogForFilter);
+  const useTargetCatalog = shouldUseTargetAttributeFilter(scopeState);
+  const filterCatalog = buildCatalogForScope(scopeState, useTargetCatalog ? "target" : "source", {
+    applyAttributeFilter: false
+  });
+  const attributeOptions = mapCatalogAttributesToOptions(filterCatalog);
   attributeEl.disabled = attributeOptions.length === 0;
 
   updateSelectOptions(attributeEl, attributeOptions, "All Attributes", scopeState.selectedFilterAttribute);
   scopeState.selectedFilterAttribute = String(attributeEl.value || "");
 
-  const optionChoices = mapCatalogValuesToOptions(sourceCatalogForFilter, scopeState.selectedFilterAttribute);
+  const optionChoices = mapCatalogValuesToOptions(filterCatalog, scopeState.selectedFilterAttribute);
   updateMultiSelectOptions(optionEl, optionChoices, scopeState.selectedFilterOptions);
   scopeState.selectedFilterOptions = readMultiSelectValues(optionEl);
   optionEl.disabled = !scopeState.selectedFilterAttribute || optionChoices.length === 0;
@@ -1178,11 +1198,12 @@ function buildCatalogForScope(scopeState, role, options = {}) {
   }
 
   const dataset = role === "source" ? state.transfer : state.target;
-  const datasetRole = role === "source" ? "transfer" : "target";
   const applyAttributeFilter = options.applyAttributeFilter !== false;
+  const useTargetFilterMode = shouldUseTargetAttributeFilter(scopeState);
+  const shouldApplyFilterForRole = applyAttributeFilter && (!useTargetFilterMode || role === "target");
   const selectedMaster = scopeState.selectedMaster || "__ALL__";
-  const filterAttrNorm = applyAttributeFilter ? scopeState.selectedFilterAttribute : "";
-  const filterOptionSet = applyAttributeFilter ? scopeState.selectedFilterOptions : new Set();
+  const filterAttrNorm = shouldApplyFilterForRole ? scopeState.selectedFilterAttribute : "";
+  const filterOptionSet = shouldApplyFilterForRole ? scopeState.selectedFilterOptions : new Set();
 
   dataset.rows.forEach((row) => {
     const groupKey = resolveSynonymGroupKey(dataset, row);
@@ -1267,10 +1288,12 @@ function updateScopeInfo(scopeEl, scopeState) {
     return;
   }
 
+  const useTargetFilterMode = shouldUseTargetAttributeFilter(scopeState);
+  const filterSourceLabel = useTargetFilterMode ? "new_sku" : "transfer_sku";
   const selectedAttribute = scopeState.selectedFilterAttribute || "";
   const optionCount = scopeState.selectedFilterOptions.size;
   const filterText = selectedAttribute
-    ? ` | Attribute filter: ${selectedAttribute}${optionCount > 0 ? ` (${optionCount} selected)` : " (all options)"}`
+    ? ` | Attribute filter (${filterSourceLabel}): ${selectedAttribute}${optionCount > 0 ? ` (${optionCount} selected)` : " (all options)"}`
     : "";
 
   if (!state.masterMode) {
@@ -1338,11 +1361,14 @@ function parseDataset(kind) {
   clearAlert();
   const isTransfer = kind === "transfer";
   const input = isTransfer ? dom.transferInput.value : dom.targetInput.value;
+  const parseWithoutHeader = isTransfer
+    ? Boolean(dom.transferNoHeader && dom.transferNoHeader.checked)
+    : Boolean(dom.targetNoHeader && dom.targetNoHeader.checked);
 
   try {
-    const parsed = parseTsv(input);
+    const parsed = parseTsv(input, { noHeader: parseWithoutHeader });
     const detected = detectColumns(parsed.headers);
-    state[kind] = { ...parsed, detected };
+    state[kind] = { ...parsed, detected, parseWithoutHeader };
     if (isTransfer) {
       state.synonymContext.autoMasterScopesApplied = false;
     }
@@ -1365,34 +1391,58 @@ function parseDataset(kind) {
   }
 }
 
-function parseTsv(rawText) {
+function parseTsv(rawText, options = {}) {
+  const parseWithoutHeader = Boolean(options.noHeader);
   const text = String(rawText || "").replace(/\r/g, "");
   const lines = text.split("\n");
 
-  let headerIndex = -1;
+  let firstContentIndex = -1;
   for (let i = 0; i < lines.length; i += 1) {
     if (lines[i].trim() !== "") {
-      headerIndex = i;
+      firstContentIndex = i;
       break;
     }
   }
 
-  if (headerIndex < 0) {
+  if (firstContentIndex < 0) {
     throw new Error("No content found.");
   }
 
-  let headers = splitTsvLine(lines[headerIndex]);
-  if (headers.length === 0) {
-    throw new Error("Header row is empty.");
+  let headers = [];
+  let dataStartIndex = firstContentIndex + 1;
+  if (parseWithoutHeader) {
+    let maxCols = 0;
+    for (let i = firstContentIndex; i < lines.length; i += 1) {
+      const line = lines[i];
+      if (line.trim() === "") {
+        continue;
+      }
+      const cells = splitTsvLine(line);
+      if (cells.length > maxCols) {
+        maxCols = cells.length;
+      }
+    }
+
+    if (maxCols === 0) {
+      throw new Error("No tabular rows found.");
+    }
+
+    headers = Array.from({ length: maxCols }, (_, idx) => NO_HEADER_DEFAULT_HEADERS[idx] || `Column${idx + 1}`);
+    dataStartIndex = firstContentIndex;
+  } else {
+    headers = splitTsvLine(lines[firstContentIndex]);
+    if (headers.length === 0) {
+      throw new Error("Header row is empty.");
+    }
+
+    headers = headers.map((header, idx) => {
+      const clean = String(header || "").trim();
+      return clean === "" ? `Column${idx + 1}` : clean;
+    });
   }
 
-  headers = headers.map((header, idx) => {
-    const clean = String(header || "").trim();
-    return clean === "" ? `Column${idx + 1}` : clean;
-  });
-
   const rows = [];
-  for (let i = headerIndex + 1; i < lines.length; i += 1) {
+  for (let i = dataStartIndex; i < lines.length; i += 1) {
     const line = lines[i];
     if (line.trim() === "") {
       continue;
@@ -1447,15 +1497,16 @@ function detectColumns(headers) {
   const attr2 = pickBestHeader(headers, (header) => scorePairHeader(header, "attribute", 2), used);
   if (attr2) {
     used.add(attr2);
-  } else {
-    errors.push("Pair #2 attribute column not detected.");
   }
 
   const opt2 = pickBestHeader(headers, (header) => scorePairHeader(header, "option", 2), used);
   if (opt2) {
     used.add(opt2);
-  } else {
-    errors.push("Pair #2 option column not detected.");
+  }
+
+  // Pair #2 is optional, but if one side is detected the other side must exist.
+  if ((attr2 && !opt2) || (!attr2 && opt2)) {
+    errors.push("Pair #2 is incomplete at header level (attribute/option mismatch).");
   }
 
   return {
@@ -1607,12 +1658,19 @@ function renderDataset(kind) {
 
   const { detected } = data;
   const items = [
+    `Parse mode: <strong>${data.parseWithoutHeader ? "No Header (default template)" : "Header Row"}</strong>`,
     `Rows parsed: <strong>${data.rows.length}</strong>`,
     `SKU column: <span class="mono">${escapeHtml(detected.sku || "Not found")}</span>`,
     `MasterCode column: <span class="mono">${escapeHtml(detected.master || "Not found")}</span>`,
     `Pair #1: <span class="mono">${escapeHtml(detected.attr1 || "Not found")}</span> / <span class="mono">${escapeHtml(detected.opt1 || "Not found")}</span>`,
     `Pair #2: <span class="mono">${escapeHtml(detected.attr2 || "Not found")}</span> / <span class="mono">${escapeHtml(detected.opt2 || "Not found")}</span>`
   ];
+
+  if (data.parseWithoutHeader) {
+    items.push(
+      `Default headers applied: ${NO_HEADER_DEFAULT_HEADERS.map((header) => escapeHtml(header)).join(" | ")}`
+    );
+  }
 
   if (detected.errors.length > 0) {
     items.push(`<strong>Errors:</strong> ${escapeHtml(detected.errors.join(" | "))}`);
@@ -1671,6 +1729,8 @@ function runMatching() {
     showAlert("Run is disabled. Parse both tables and resolve detection errors first.", "error");
     return;
   }
+
+  syncScopeFilterStateFromUi();
 
   const transfer = state.transfer;
   const target = state.target;
@@ -1785,6 +1845,27 @@ function runMatching() {
       return;
     }
 
+    const attributeFilterOutcome = applyTargetAttributeFilterForSingleSourcePair({
+      candidateSet,
+      usablePairs,
+      sourceMasterRaw: transferMasterRaw,
+      targetIndex
+    });
+    if (attributeFilterOutcome.applied) {
+      candidateSet = attributeFilterOutcome.filteredSet;
+      if (candidateSet.size === 0) {
+        result.Status = "NO_MATCH";
+        result.Reason = "No candidate matched the selected Attribute Filter.";
+        results.push(result);
+        return;
+      }
+    }
+
+    let matchedReason = "Single candidate found.";
+    if (attributeFilterOutcome.applied && candidateSet.size === 1) {
+      matchedReason = "Single candidate found after applying Attribute Filter.";
+    }
+
     if (candidateSet.size === 1) {
       const skuKey = candidateSet.values().next().value;
       const meta = targetIndex.skuMeta.get(skuKey) || {
@@ -1798,7 +1879,7 @@ function runMatching() {
       result.TargetAttributes2 = meta.attr2Display || "";
       result.TargetMasterCode = meta.master;
       result.Status = "MATCHED";
-      result.Reason = "Single candidate found.";
+      result.Reason = matchedReason;
       results.push(result);
       return;
     }
@@ -1817,6 +1898,30 @@ function runMatching() {
   renderResults();
 
   showAlert(`Matching completed: ${results.length} rows processed.`, "success");
+}
+
+function syncScopeFilterStateFromUi() {
+  const scopeEls = Array.from(dom.synonymScopesContainer.querySelectorAll(".synonym-scope"));
+  scopeEls.forEach((scopeEl) => {
+    const scopeState = getScopeState(scopeEl);
+    if (!scopeState) {
+      return;
+    }
+
+    const masterEl = getScopeElement(scopeEl, "masterFilter");
+    const attributeEl = getScopeElement(scopeEl, "attributeFilter");
+    const optionEl = getScopeElement(scopeEl, "optionFilter");
+
+    if (masterEl) {
+      scopeState.selectedMaster = String(masterEl.value || "__ALL__");
+    }
+    if (attributeEl) {
+      scopeState.selectedFilterAttribute = String(attributeEl.value || "");
+    }
+    if (optionEl) {
+      scopeState.selectedFilterOptions = readMultiSelectValues(optionEl);
+    }
+  });
 }
 
 function createBaseResult() {
@@ -2039,6 +2144,109 @@ function findMatchingRule(grouped, sourceRawValue) {
   return null;
 }
 
+function applyTargetAttributeFilterForSingleSourcePair(options) {
+  const candidateSet = options?.candidateSet;
+  const sourceMasterRaw = options?.sourceMasterRaw || "";
+  const targetIndex = options?.targetIndex;
+
+  if (!candidateSet || candidateSet.size === 0) {
+    return {
+      applied: false,
+      filteredSet: candidateSet || new Set()
+    };
+  }
+
+  const sourceMasterNorm = normalizeValue(sourceMasterRaw);
+  const scopeState = resolveScopeForMaster(sourceMasterNorm);
+  if (!scopeState) {
+    return {
+      applied: false,
+      filteredSet: candidateSet
+    };
+  }
+
+  const filterAttrNorm = normalizeValue(scopeState.selectedFilterAttribute);
+  if (!filterAttrNorm) {
+    return {
+      applied: false,
+      filteredSet: candidateSet
+    };
+  }
+
+  const filterOptionSet = scopeState.selectedFilterOptions || new Set();
+  const filteredSet = new Set();
+
+  candidateSet.forEach((skuKey) => {
+    const skuMeta = targetIndex?.skuMeta?.get(skuKey);
+    const pair = skuMeta?.attributeMap?.get(filterAttrNorm);
+    if (!pair) {
+      return;
+    }
+
+    if (filterOptionSet.size === 0 || filterOptionSet.has(pair.optNorm)) {
+      filteredSet.add(skuKey);
+    }
+  });
+
+  return {
+    applied: true,
+    filteredSet
+  };
+}
+
+function resolveScopeForMaster(sourceMasterNorm) {
+  const scopes = Array.from(state.synonymContext.scopes.values());
+  if (scopes.length === 0) {
+    return null;
+  }
+
+  if (sourceMasterNorm) {
+    const exactScope = scopes.find(
+      (scopeState) => normalizeValue(scopeState.selectedMaster || "__ALL__") === sourceMasterNorm
+    );
+    if (exactScope) {
+      return exactScope;
+    }
+  }
+
+  const globalScope = scopes.find((scopeState) => String(scopeState.selectedMaster || "__ALL__") === "__ALL__");
+  return globalScope || scopes[0];
+}
+
+function shouldUseTargetAttributeFilter(scopeState) {
+  if (!scopeState || !state.transfer) {
+    return false;
+  }
+
+  const selectedMaster = scopeState.selectedMaster || "__ALL__";
+  let hasAtLeastOneSourcePair = false;
+
+  for (let i = 0; i < state.transfer.rows.length; i += 1) {
+    const row = state.transfer.rows[i];
+    const groupKey = resolveSynonymGroupKey(state.transfer, row);
+    if (!groupKey) {
+      continue;
+    }
+
+    if (state.masterMode && selectedMaster !== "__ALL__" && groupKey !== selectedMaster) {
+      continue;
+    }
+
+    const pair1 = extractPair(row, state.transfer.detected.attr1, state.transfer.detected.opt1);
+    const pair2 = extractPair(row, state.transfer.detected.attr2, state.transfer.detected.opt2);
+
+    if (pair1.complete) {
+      hasAtLeastOneSourcePair = true;
+    }
+
+    if (pair2.complete) {
+      return false;
+    }
+  }
+
+  return hasAtLeastOneSourcePair;
+}
+
 function readInputValue(row, field) {
   const node = row.querySelector(`[data-field='${field}']`);
   if (!node) {
@@ -2070,13 +2278,28 @@ function buildTargetIndex(target, masterMode) {
 
     const pair1 = extractPair(row, d.attr1, d.opt1);
     const pair2 = extractPair(row, d.attr2, d.opt2);
+    const attributeMap = new Map();
+    [pair1, pair2]
+      .filter((pair) => pair.complete)
+      .forEach((pair) => {
+        if (attributeMap.has(pair.attrNorm)) {
+          return;
+        }
+        attributeMap.set(pair.attrNorm, {
+          attrNorm: pair.attrNorm,
+          attrRaw: pair.attrRaw,
+          optNorm: pair.optNorm,
+          optRaw: pair.optRaw
+        });
+      });
 
     if (!skuMeta.has(skuNorm)) {
       skuMeta.set(skuNorm, {
         sku: skuRaw,
         master: rowMasterRaw,
         attr1Display: pair1.display || "",
-        attr2Display: pair2.display || ""
+        attr2Display: pair2.display || "",
+        attributeMap
       });
     }
 

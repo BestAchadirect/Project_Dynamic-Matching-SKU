@@ -78,6 +78,10 @@ h2 {
   font-size: 1.1rem;
 }
 
+.mono {
+  font-family: Consolas, "Courier New", monospace;
+}
+
 .input-area {
   width: 100%;
   min-height: 180px;
@@ -92,6 +96,15 @@ h2 {
 
 .input-area.small {
   min-height: 100px;
+}
+
+.toggle-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.2rem 0 0.65rem;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .hint {
