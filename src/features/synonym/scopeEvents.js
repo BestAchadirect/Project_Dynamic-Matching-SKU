@@ -1,3 +1,5 @@
+import { normalizeFilterDataset } from "./scopeState.js";
+
 export function handleSynonymScopesClick({
   event,
   state,
@@ -63,7 +65,6 @@ export function handleSynonymScopesChange({
   event,
   getScopeState,
   refreshSynonymScope,
-  resetScopeSynonymTable,
   readMultiSelectValues,
   updateScopeBulkButtonState,
   refreshSynonymRuleRow
@@ -94,22 +95,44 @@ export function handleSynonymScopesChange({
     return;
   }
 
+  if (field === "targetMasterFilter") {
+    scopeState.selectedTargetMaster = String(target.value || "");
+    refreshSynonymScope(scopeEl, scopeState);
+    return;
+  }
+
+  if (field === "filterDataset") {
+    scopeState.selectedFilterDataset = normalizeFilterDataset(target.value || "target");
+    scopeState.selectedFilterAttribute = "";
+    scopeState.selectedFilterOptions = new Set();
+    scopeState.selectedFilterAttribute2 = "";
+    scopeState.selectedFilterOptions2 = new Set();
+    refreshSynonymScope(scopeEl, scopeState);
+    return;
+  }
+
   if (field === "attributeFilter") {
-    const previous = scopeState.selectedFilterAttribute;
     scopeState.selectedFilterAttribute = String(target.value || "");
     scopeState.selectedFilterOptions = new Set();
     refreshSynonymScope(scopeEl, scopeState);
+    return;
+  }
 
-    const switchedToAllAttributes = Boolean(previous) && !scopeState.selectedFilterAttribute;
-    const isSpecificMaster = (scopeState.selectedMaster || "__ALL__") !== "__ALL__";
-    if (switchedToAllAttributes && isSpecificMaster) {
-      resetScopeSynonymTable(scopeEl);
-    }
+  if (field === "attributeFilter2") {
+    scopeState.selectedFilterAttribute2 = String(target.value || "");
+    scopeState.selectedFilterOptions2 = new Set();
+    refreshSynonymScope(scopeEl, scopeState);
     return;
   }
 
   if (field === "optionFilter") {
     scopeState.selectedFilterOptions = readMultiSelectValues(target);
+    refreshSynonymScope(scopeEl, scopeState);
+    return;
+  }
+
+  if (field === "optionFilter2") {
+    scopeState.selectedFilterOptions2 = readMultiSelectValues(target);
     refreshSynonymScope(scopeEl, scopeState);
     return;
   }

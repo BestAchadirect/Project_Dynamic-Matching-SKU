@@ -4,6 +4,7 @@ import { intersectSets } from "../../core/collections.js";
 import { buildTargetIndex, extractPair } from "./targetIndex.js";
 import { applySynonymRuleToPair } from "../synonym/ruleEngine.js";
 import { applyTargetAttributeFilter } from "./attributeFilter.js";
+import { resolveScopeForMaster } from "../synonym/scopeState.js";
 
 export function createBaseResult() {
   return {
@@ -59,18 +60,40 @@ export function runMatchingRows({ transfer, target, synonymMap, state, masterMod
       return;
     }
 
-    const completePairs = [pair1, pair2].filter((pair) => pair.complete);
-    if (completePairs.length === 0) {
-      result.Status = "BLOCKED";
-      result.Reason = "No complete attribute pairs in source row.";
-      results.push(result);
-      return;
-    }
-
     const sourceMasterNormForSynonym = normalizeValue(transferMasterRaw);
     const synonymMasterKey = masterMode
       ? (sourceMasterNormForSynonym || "__ALL__")
       : "__ALL__";
+
+    let groupKey = GLOBAL_GROUP_KEY;
+    if (masterMode) {
+      const sourceMasterNorm = normalizeValue(transferMasterRaw);
+      if (!sourceMasterNorm) {
+        result.Status = "BLOCKED";
+        result.Reason = "Master matching is enabled but source MasterCode is missing.";
+        results.push(result);
+        return;
+      }
+
+      const scopeState = resolveScopeForMaster(state, sourceMasterNorm);
+      const mappedTargetMaster = scopeState?.selectedTargetMaster
+        ? normalizeValue(scopeState.selectedTargetMaster)
+        : "";
+      const mappingApplied = Boolean(mappedTargetMaster && mappedTargetMaster !== sourceMasterNorm);
+      groupKey = mappedTargetMaster || sourceMasterNorm;
+
+      if (!targetIndex.allByGroup.has(groupKey)) {
+        result.Status = "NO_MATCH";
+        result.Reason = mappingApplied
+          ? "Selected Target MasterCode does not exist in target table."
+          : "Source MasterCode does not exist in target table.";
+        results.push(result);
+        return;
+      }
+    }
+
+    const completePairs = [pair1, pair2].filter((pair) => pair.complete);
+    const noSourcePairs = completePairs.length === 0;
 
     const usablePairs = [];
     for (let i = 0; i < completePairs.length; i += 1) {
@@ -86,47 +109,37 @@ export function runMatchingRows({ transfer, target, synonymMap, state, masterMod
       usablePairs.push(synonymOutcome.pairForLookup);
     }
 
-    let groupKey = GLOBAL_GROUP_KEY;
-    if (masterMode) {
-      const sourceMasterNorm = normalizeValue(transferMasterRaw);
-      if (!sourceMasterNorm) {
-        result.Status = "BLOCKED";
-        result.Reason = "Master matching is enabled but source MasterCode is missing.";
-        results.push(result);
-        return;
-      }
-
-      groupKey = sourceMasterNorm;
-
-      if (!targetIndex.allByGroup.has(groupKey)) {
-        result.Status = "NO_MATCH";
-        result.Reason = "Source MasterCode does not exist in target table.";
-        results.push(result);
-        return;
-      }
-    }
-
     let candidateSet = null;
-    for (let i = 0; i < usablePairs.length; i += 1) {
-      const pair = usablePairs[i];
-      const optionSet = targetIndex.index.get(groupKey)?.get(pair.attrNorm)?.get(pair.optNorm);
+    if (noSourcePairs) {
+      candidateSet = new Set(targetIndex.allByGroup.get(groupKey) || []);
+    } else {
+      for (let i = 0; i < usablePairs.length; i += 1) {
+        const pair = usablePairs[i];
+        const optionSet = targetIndex.index.get(groupKey)?.get(pair.attrNorm)?.get(pair.optNorm);
 
-      if (!optionSet) {
-        candidateSet = new Set();
-        break;
-      }
+        if (!optionSet) {
+          candidateSet = new Set();
+          break;
+        }
 
-      candidateSet = candidateSet ? intersectSets(candidateSet, optionSet) : new Set(optionSet);
-      if (candidateSet.size === 0) {
-        break;
+        candidateSet = candidateSet ? intersectSets(candidateSet, optionSet) : new Set(optionSet);
+        if (candidateSet.size === 0) {
+          break;
+        }
       }
     }
 
     if (!candidateSet || candidateSet.size === 0) {
       result.Status = "NO_MATCH";
-      result.Reason = masterMode
-        ? "No attribute match inside the selected MasterCode group."
-        : "No attribute match in target table.";
+      if (noSourcePairs) {
+        result.Reason = masterMode
+          ? "No candidates available in selected MasterCode group."
+          : "No candidates available in target table.";
+      } else {
+        result.Reason = masterMode
+          ? "No attribute match inside the selected MasterCode group."
+          : "No attribute match in target table.";
+      }
       results.push(result);
       return;
     }
@@ -151,6 +164,8 @@ export function runMatchingRows({ transfer, target, synonymMap, state, masterMod
     let matchedReason = "Single candidate found.";
     if (attributeFilterOutcome.applied && candidateSet.size === 1) {
       matchedReason = "Single candidate found after applying Attribute Filter.";
+    } else if (noSourcePairs && candidateSet.size === 1) {
+      matchedReason = "Single candidate found without source attributes.";
     }
 
     if (candidateSet.size === 1) {
@@ -176,7 +191,9 @@ export function runMatchingRows({ transfer, target, synonymMap, state, masterMod
       .sort((a, b) => a.localeCompare(b));
 
     result.Status = "AMBIGUOUS";
-    result.Reason = `Multiple candidates found in same ${masterMode ? "MasterCode" : "global"} scope.`;
+    result.Reason = noSourcePairs
+      ? `Multiple candidates found without source attributes in same ${masterMode ? "MasterCode" : "global"} scope.`
+      : `Multiple candidates found in same ${masterMode ? "MasterCode" : "global"} scope.`;
     result.Candidates = candidateSkus.join(", ");
     results.push(result);
   });

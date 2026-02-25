@@ -1,4 +1,4 @@
-import { shouldUseTargetAttributeFilter } from "./scopeState.js";
+import { getFilterDatasetLabel } from "./scopeState.js";
 
 export function getScopeMasterLabel(scopeState, state) {
   const selectedMaster = scopeState.selectedMaster || "__ALL__";
@@ -14,8 +14,7 @@ export function updateScopeInfo({
   scopeEl,
   scopeState,
   state,
-  getScopeElement,
-  extractPair
+  getScopeElement
 }) {
   const infoEl = getScopeElement(scopeEl, "scopeInfo");
   const headerInfoEl = getScopeElement(scopeEl, "scopeHeaderInfo");
@@ -35,28 +34,42 @@ export function updateScopeInfo({
     return;
   }
 
-  const useTargetFilterMode = shouldUseTargetAttributeFilter({ state, scopeState, extractPair });
-  const filterSourceLabel = useTargetFilterMode ? "new_sku" : "transfer_sku";
+  const filterSourceLabel = getFilterDatasetLabel(scopeState.selectedFilterDataset);
   const selectedAttribute = scopeState.selectedFilterAttribute || "";
   const optionCount = scopeState.selectedFilterOptions.size;
+  const sourceAttrCount = scopeState.sourceCatalog?.size || 0;
+  const targetAttrCount = scopeState.targetCatalog?.size || 0;
+  const targetMasterLabel = scopeState.selectedTargetMaster
+    ? ` | Target MasterCode: ${scopeState.selectedTargetMaster}`
+    : "";
+  const availabilityText = ` | Source attrs: ${sourceAttrCount} | Target attrs: ${targetAttrCount}${targetMasterLabel}`;
+  const sourceEmptyHint = sourceAttrCount === 0
+    ? " | Warning: no transfer_sku attributes/options detected; Synonym Rules disabled."
+    : "";
   const filterText = selectedAttribute
     ? ` | Attribute filter (${filterSourceLabel}): ${selectedAttribute}${optionCount > 0 ? ` (${optionCount} selected)` : " (all options)"}`
     : "";
+  const selectedAttribute2 = scopeState.selectedFilterAttribute2 || "";
+  const optionCount2 = scopeState.selectedFilterOptions2.size;
+  const filterText2 = selectedAttribute2
+    ? ` | Attribute filter 2 (new_sku): ${selectedAttribute2}${optionCount2 > 0 ? ` (${optionCount2} selected)` : " (all options)"}`
+    : "";
+  const detailText = `${filterText}${filterText2}${availabilityText}${sourceEmptyHint}`;
 
   if (!state.masterMode) {
-    infoEl.textContent = `MasterCode filter disabled.${filterText}`;
+    infoEl.textContent = `MasterCode filter disabled.${detailText}`;
     return;
   }
 
   if (selectedMaster === "__ALL__") {
-    infoEl.textContent = `All master groups${filterText}.`;
+    infoEl.textContent = `All master groups${detailText}.`;
     return;
   }
 
   const choice = state.synonymContext.masterChoices.find((item) => item.value === selectedMaster);
   const infoText = choice
-    ? `MasterCode: ${choice.label}${filterText}.`
-    : `MasterCode: ${selectedMaster}${filterText}.`;
+    ? `MasterCode: ${choice.label}${detailText}.`
+    : `MasterCode: ${selectedMaster}${detailText}.`;
 
   infoEl.textContent = infoText;
 }

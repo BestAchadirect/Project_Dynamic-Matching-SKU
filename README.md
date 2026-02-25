@@ -66,8 +66,8 @@ If input rows have more than 13 columns, extra columns are named `Column14`, `Co
 - Matching is normalized (trim, lowercase, normalized spacing).
 - Matching is restricted within the same Master Code group when Master Code is detected in both tables.
 - If source has only one complete pair (for example `Length`), matching uses that pair only.
-- When source has only one complete pair, `Attribute Filter` automatically switches to `new_sku` attributes.
-- When `Attribute Filter` is set, selected values are applied to narrow target candidates.
+- `Attribute Filter` can use `new_sku` or `transfer_sku` via `Filter Source`.
+- Target candidate narrowing is applied only when `Filter Source = new_sku`.
 - Rows can end as `MATCHED`, `NO_MATCH`, `AMBIGUOUS`, or `BLOCKED`.
 
 ## Result Output

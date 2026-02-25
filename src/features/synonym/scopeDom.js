@@ -11,31 +11,62 @@ export function createSynonymScopeElement(scopeId) {
     </div>
     <div class="synonym-scope-content">
       <div class="synonym-filter-grid">
-        <div class="filter-group">
-          <label>MasterCode Filter</label>
-          <select class="synonym-filter-select" data-field="masterFilter"></select>
+        <div class="filter-block">
+          <div class="filter-block-head">1. Scope</div>
+          <div class="filter-group">
+            <label>MasterCode (transfer)</label>
+            <select class="synonym-filter-select" data-field="masterFilter"></select>
+          </div>
+          <div class="filter-group">
+            <label>MasterCode (new_sku)</label>
+            <select class="synonym-filter-select" data-field="targetMasterFilter"></select>
+          </div>
         </div>
-        <div class="filter-group">
-          <label>Attribute Filter</label>
-          <select class="synonym-filter-select" data-field="attributeFilter"></select>
+        <div class="filter-block">
+          <div class="filter-block-head">2. Filter Candidates</div>
+          <div class="filter-group">
+            <label>Filter Source</label>
+            <select class="synonym-filter-select" data-field="filterDataset"></select>
+          </div>
+          <div class="filter-group">
+            <label>Attribute Filter</label>
+            <select class="synonym-filter-select" data-field="attributeFilter"></select>
+          </div>
+          <div class="filter-group">
+            <label>Options (Multi-select)</label>
+            <select class="synonym-filter-select" data-field="optionFilter" multiple size="4"></select>
+          </div>
         </div>
-        <div class="filter-group">
-          <label>Options (Multi-select)</label>
-          <select class="synonym-filter-select" data-field="optionFilter" multiple size="4"></select>
+        <div class="filter-block">
+          <div class="filter-block-head">3. Extra Target Filter</div>
+          <div class="filter-group">
+            <label>Attribute Filter 2 (Target)</label>
+            <select class="synonym-filter-select" data-field="attributeFilter2"></select>
+          </div>
+          <div class="filter-group">
+            <label>Options 2 (Multi-select)</label>
+            <select class="synonym-filter-select" data-field="optionFilter2" multiple size="4"></select>
+          </div>
         </div>
       </div>
 
       <div class="synonym-action-bar">
-        <div class="meta" data-field="scopeInfo"></div>
-        <div style="flex-grow: 1;"></div>
-        <div class="filter-group" style="min-width: 150px;">
-          <select class="synonym-filter-select" data-field="bulkSourceAttr"></select>
+        <div class="synonym-action-info">
+          <div class="meta" data-field="scopeInfo"></div>
+          <div class="action-hint">4. Add synonym rules or bulk map options.</div>
         </div>
-        <div class="filter-group" style="min-width: 150px;">
-          <select class="synonym-filter-select" data-field="bulkTargetAttr"></select>
+        <div class="synonym-action-controls">
+          <div class="filter-group">
+            <label>Bulk Source Attr</label>
+            <select class="synonym-filter-select" data-field="bulkSourceAttr"></select>
+          </div>
+          <div class="filter-group">
+            <label>Bulk Target Attr</label>
+            <select class="synonym-filter-select" data-field="bulkTargetAttr"></select>
+          </div>
+          <button class="btn btn-secondary" data-action="bulk-add-rules" type="button">Bulk Add</button>
+          <button class="btn btn-primary" data-action="add-rule-row" type="button">Add Rule</button>
         </div>
-        <button class="btn btn-secondary" data-action="bulk-add-rules" type="button">Bulk Add</button>
-        <button class="btn btn-primary" data-action="add-rule-row" type="button">Add Rule</button>
       </div>
 
       <div class="synonym-table-wrap empty">

@@ -1,4 +1,9 @@
-import { buildMasterChoices, collectTransferMasterValues } from "./scopeState.js";
+import {
+  buildMasterChoices,
+  buildTargetMasterChoices,
+  collectTransferMasterValues,
+  normalizeFilterDataset
+} from "./scopeState.js";
 import { readInputValue } from "./scopeRulesUi.js";
 
 export function getScopeState({ state, scopeEl }) {
@@ -32,10 +37,16 @@ export function addSynonymMasterScope({
   const scopeState = {
     id: scopeId,
     selectedMaster: String(initialScope.selectedMaster || "__ALL__"),
+    selectedTargetMaster: String(initialScope.selectedTargetMaster || ""),
+    selectedFilterDataset: normalizeFilterDataset(initialScope.selectedFilterDataset),
     selectedFilterAttribute: String(initialScope.selectedFilterAttribute || ""),
+    selectedFilterAttribute2: String(initialScope.selectedFilterAttribute2 || ""),
     selectedFilterOptions: new Set(initialScope.selectedFilterOptions || []),
+    selectedFilterOptions2: new Set(initialScope.selectedFilterOptions2 || []),
     sourceCatalog: new Map(),
-    targetCatalog: new Map()
+    targetCatalog: new Map(),
+    bulkSourceCatalog: new Map(),
+    bulkTargetCatalog: new Map()
   };
   ctx.scopes.set(scopeId, scopeState);
 
@@ -56,12 +67,20 @@ export function rebuildSynonymContext({
 }) {
   const ctx = state.synonymContext;
   ctx.masterChoices = buildMasterChoices(state);
+  ctx.targetMasterChoices = buildTargetMasterChoices(state);
 
   const validMasters = new Set(ctx.masterChoices.map((choice) => choice.value));
+  const validTargetMasters = new Set(ctx.targetMasterChoices.map((choice) => choice.value));
   ctx.scopes.forEach((scopeState) => {
     if (state.masterMode && scopeState.selectedMaster !== "__ALL__" && !validMasters.has(scopeState.selectedMaster)) {
       scopeState.selectedMaster = "__ALL__";
     }
+    if (scopeState.selectedTargetMaster && !validTargetMasters.has(scopeState.selectedTargetMaster)) {
+      scopeState.selectedTargetMaster = "";
+    }
+    scopeState.selectedFilterDataset = normalizeFilterDataset(scopeState.selectedFilterDataset);
+    scopeState.selectedFilterAttribute2 = String(scopeState.selectedFilterAttribute2 || "");
+    scopeState.selectedFilterOptions2 = new Set(scopeState.selectedFilterOptions2 || []);
   });
 
   if (ctx.scopes.size === 0) {
@@ -160,17 +179,29 @@ export function syncScopeFilterStateFromUi({
     }
 
     const masterEl = getScopeElement(scopeEl, "masterFilter");
+    const filterDatasetEl = getScopeElement(scopeEl, "filterDataset");
     const attributeEl = getScopeElement(scopeEl, "attributeFilter");
     const optionEl = getScopeElement(scopeEl, "optionFilter");
+    const attributeEl2 = getScopeElement(scopeEl, "attributeFilter2");
+    const optionEl2 = getScopeElement(scopeEl, "optionFilter2");
 
     if (masterEl) {
       scopeState.selectedMaster = String(masterEl.value || "__ALL__");
     }
+    if (filterDatasetEl) {
+      scopeState.selectedFilterDataset = normalizeFilterDataset(filterDatasetEl.value || "target");
+    }
     if (attributeEl) {
       scopeState.selectedFilterAttribute = String(attributeEl.value || "");
     }
+    if (attributeEl2) {
+      scopeState.selectedFilterAttribute2 = String(attributeEl2.value || "");
+    }
     if (optionEl) {
       scopeState.selectedFilterOptions = readMultiSelectValues(optionEl);
+    }
+    if (optionEl2) {
+      scopeState.selectedFilterOptions2 = readMultiSelectValues(optionEl2);
     }
   });
 }

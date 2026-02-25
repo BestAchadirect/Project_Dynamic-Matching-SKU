@@ -4,6 +4,7 @@ import { normalizeValue, readCell } from "../../core/normalize.js";
 export function createEmptySynonymContext() {
   return {
     masterChoices: [],
+    targetMasterChoices: [],
     scopes: new Map(),
     nextScopeId: 1,
     autoMasterScopesApplied: false
@@ -19,6 +20,7 @@ export function buildMasterChoices(state) {
 
   const seen = new Map();
 
+  // Synonym rule source is transfer_sku, so prioritize transfer masters for scope selection.
   if (hasTransferMaster) {
     state.transfer.rows.forEach((row) => {
       const sourceRaw = readCell(row, state.transfer.detected.master);
@@ -31,8 +33,12 @@ export function buildMasterChoices(state) {
         seen.set(sourceNorm, sourceRaw);
       }
     });
+    return Array.from(seen.entries())
+      .map(([value, label]) => ({ value, label }));
+
   }
 
+  // Fallback only when transfer master is unavailable.
   if (hasTargetMaster) {
     state.target.rows.forEach((row) => {
       const targetRaw = readCell(row, state.target.detected.master);
@@ -45,8 +51,8 @@ export function buildMasterChoices(state) {
   }
 
   return Array.from(seen.entries())
-    .map(([value, label]) => ({ value, label }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+    .map(([value, label]) => ({ value, label }));
+
 }
 
 export function collectTransferMasterValues(state) {
@@ -99,7 +105,38 @@ export function resolveScopeForMaster(state, sourceMasterNorm) {
   }
 
   const globalScope = scopes.find((scopeState) => String(scopeState.selectedMaster || "__ALL__") === "__ALL__");
-  return globalScope || scopes[0];
+  return globalScope || null;
+}
+
+export function buildTargetMasterChoices(state) {
+  if (!state.target || !state.target.detected.master) {
+    return [];
+  }
+
+  const seen = new Map();
+  state.target.rows.forEach((row) => {
+    const targetRaw = readCell(row, state.target.detected.master);
+    const targetNorm = normalizeValue(targetRaw);
+    if (!targetNorm) {
+      return;
+    }
+    if (!seen.has(targetNorm)) {
+      seen.set(targetNorm, targetRaw);
+    }
+  });
+
+  return Array.from(seen.entries())
+    .map(([value, label]) => ({ value, label }));
+
+}
+
+export function normalizeFilterDataset(value) {
+  const raw = String(value || "target").trim().toLowerCase();
+  return raw === "source" ? "source" : "target";
+}
+
+export function getFilterDatasetLabel(value) {
+  return normalizeFilterDataset(value) === "source" ? "transfer_sku" : "new_sku";
 }
 
 export function shouldUseTargetAttributeFilter({ state, scopeState, extractPair }) {
@@ -135,3 +172,4 @@ export function shouldUseTargetAttributeFilter({ state, scopeState, extractPair 
 
   return hasAtLeastOneSourcePair;
 }
+

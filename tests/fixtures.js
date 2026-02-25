@@ -19,14 +19,22 @@ export function createDataset(rows, detected = DETECTED_COLUMNS) {
 
 export function createStateWithScope({
   selectedMaster = "m1",
+  selectedTargetMaster = "",
+  selectedFilterDataset = "target",
   selectedFilterAttribute = "",
-  selectedFilterOptions = []
+  selectedFilterAttribute2 = "",
+  selectedFilterOptions = [],
+  selectedFilterOptions2 = []
 } = {}) {
   const scope = {
     id: "scope_1",
     selectedMaster,
+    selectedTargetMaster,
+    selectedFilterDataset,
     selectedFilterAttribute,
+    selectedFilterAttribute2,
     selectedFilterOptions: new Set(selectedFilterOptions),
+    selectedFilterOptions2: new Set(selectedFilterOptions2),
     sourceCatalog: new Map(),
     targetCatalog: new Map()
   };

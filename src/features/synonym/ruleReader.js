@@ -1,5 +1,6 @@
-export function readSynonymRulesFromUi({ dom, getScopeState, getScopeElement }) {
+export function readSynonymRulesFromUiDetailed({ dom, getScopeState, getScopeElement }) {
   const rules = [];
+  const warnings = [];
   const scopeEls = Array.from(dom.synonymScopesContainer.querySelectorAll(".synonym-scope"));
   let rowCounter = 0;
 
@@ -29,12 +30,16 @@ export function readSynonymRulesFromUi({ dom, getScopeState, getScopeElement }) 
       }
 
       if (!["EXACT", "CONTAINS", "REGEX"].includes(matchType)) {
-        console.warn(`[Synonym] Invalid match type on row ${rowCounter}. Defaulting to EXACT.`);
+        const warning = `[Synonym] Invalid match type on row ${rowCounter}. Defaulting to EXACT.`;
+        warnings.push(warning);
+        console.warn(warning);
         matchType = "EXACT";
       }
 
       if (!attributeName || !sourcePattern || !targetAttributeName || !targetValue) {
-        console.warn(`[Synonym] Incomplete row ${rowCounter} ignored.`);
+        const warning = `[Synonym] Incomplete row ${rowCounter} (scope ${scopeIndex + 1}, row ${rowIndex + 1}) ignored.`;
+        warnings.push(warning);
+        console.warn(warning);
         return;
       }
 
@@ -52,7 +57,11 @@ export function readSynonymRulesFromUi({ dom, getScopeState, getScopeElement }) 
     });
   });
 
-  return rules;
+  return { rules, warnings };
+}
+
+export function readSynonymRulesFromUi(options) {
+  return readSynonymRulesFromUiDetailed(options).rules;
 }
 
 export function readInputValue(row, field) {

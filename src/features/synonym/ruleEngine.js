@@ -1,7 +1,8 @@
 import { normalizeValue, normalizeSynonymValue } from "../../core/normalize.js";
 
-export function preprocessSynonymRules(rawRules) {
+export function preprocessSynonymRulesDetailed(rawRules) {
   const synonymMap = new Map();
+  const warnings = [];
 
   rawRules.forEach((rule, order) => {
     const masterKey = normalizeValue(rule.masterScope || "__ALL__") || "__all__";
@@ -11,7 +12,9 @@ export function preprocessSynonymRules(rawRules) {
     const targetValueNorm = normalizeValue(rule.targetValue);
 
     if (!attrNorm || !patternNorm || !targetAttrNorm || !targetValueNorm) {
-      console.warn(`[Synonym] Invalid normalized values on row ${rule.rowNumber}.`);
+      const warning = `[Synonym] Invalid normalized values on row ${rule.rowNumber}.`;
+      warnings.push(warning);
+      console.warn(warning);
       return;
     }
 
@@ -49,13 +52,13 @@ export function preprocessSynonymRules(rawRules) {
           existing.targetValueNorm === compiledRule.targetValueNorm;
 
         if (!sameTarget) {
-          console.warn(
-            `[Synonym] EXACT conflict for master "${masterKey}", attribute "${rule.attributeName}" and pattern "${rule.sourcePattern}" on row ${rule.rowNumber}. Using first match from row ${existing.rowNumber}.`
-          );
+          const warning = `[Synonym] EXACT conflict for master "${masterKey}", attribute "${rule.attributeName}" and pattern "${rule.sourcePattern}" on row ${rule.rowNumber}. Using first match from row ${existing.rowNumber}.`;
+          warnings.push(warning);
+          console.warn(warning);
         } else {
-          console.warn(
-            `[Synonym] Duplicate EXACT rule for master "${masterKey}", attribute "${rule.attributeName}" and pattern "${rule.sourcePattern}" on row ${rule.rowNumber}. Using first match from row ${existing.rowNumber}.`
-          );
+          const warning = `[Synonym] Duplicate EXACT rule for master "${masterKey}", attribute "${rule.attributeName}" and pattern "${rule.sourcePattern}" on row ${rule.rowNumber}. Using first match from row ${existing.rowNumber}.`;
+          warnings.push(warning);
+          console.warn(warning);
         }
         return;
       }
@@ -74,11 +77,17 @@ export function preprocessSynonymRules(rawRules) {
       compiledRule.regex = new RegExp(rule.sourcePattern, "i");
       grouped.regex.push(compiledRule);
     } catch (error) {
-      console.warn(`[Synonym] Invalid REGEX on row ${rule.rowNumber}: ${error.message}`);
+      const warning = `[Synonym] Invalid REGEX on row ${rule.rowNumber}: ${error.message}`;
+      warnings.push(warning);
+      console.warn(warning);
     }
   });
 
-  return synonymMap;
+  return { synonymMap, warnings };
+}
+
+export function preprocessSynonymRules(rawRules) {
+  return preprocessSynonymRulesDetailed(rawRules).synonymMap;
 }
 
 export function applySynonymRuleToPair(pair, synonymMap, masterKey) {

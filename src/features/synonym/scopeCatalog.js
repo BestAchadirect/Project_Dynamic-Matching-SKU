@@ -1,4 +1,4 @@
-import { resolveSynonymGroupKey, shouldUseTargetAttributeFilter } from "./scopeState.js";
+import { normalizeFilterDataset, resolveSynonymGroupKey } from "./scopeState.js";
 
 export function buildCatalogForScope({ state, scopeState, role, options = {}, extractPair }) {
   const catalog = new Map();
@@ -8,11 +8,17 @@ export function buildCatalogForScope({ state, scopeState, role, options = {}, ex
 
   const dataset = role === "source" ? state.transfer : state.target;
   const applyAttributeFilter = options.applyAttributeFilter !== false;
-  const useTargetFilterMode = shouldUseTargetAttributeFilter({ state, scopeState, extractPair });
-  const shouldApplyFilterForRole = applyAttributeFilter && (!useTargetFilterMode || role === "target");
+  const selectedFilterDataset = normalizeFilterDataset(scopeState.selectedFilterDataset);
+  const shouldApplyFilterForRole = applyAttributeFilter && role === selectedFilterDataset;
   const selectedMaster = scopeState.selectedMaster || "__ALL__";
+  const selectedTargetMaster = scopeState.selectedTargetMaster || "";
+  const masterFilterValue = role === "target" && selectedTargetMaster
+    ? selectedTargetMaster
+    : selectedMaster;
   const filterAttrNorm = shouldApplyFilterForRole ? scopeState.selectedFilterAttribute : "";
   const filterOptionSet = shouldApplyFilterForRole ? scopeState.selectedFilterOptions : new Set();
+  const filterAttrNorm2 = shouldApplyFilterForRole ? scopeState.selectedFilterAttribute2 : "";
+  const filterOptionSet2 = shouldApplyFilterForRole ? scopeState.selectedFilterOptions2 : new Set();
 
   dataset.rows.forEach((row) => {
     const groupKey = resolveSynonymGroupKey(state, dataset, row);
@@ -20,7 +26,7 @@ export function buildCatalogForScope({ state, scopeState, role, options = {}, ex
       return;
     }
 
-    if (state.masterMode && selectedMaster !== "__ALL__" && groupKey !== selectedMaster) {
+    if (state.masterMode && masterFilterValue !== "__ALL__" && groupKey !== masterFilterValue) {
       return;
     }
 
@@ -28,7 +34,7 @@ export function buildCatalogForScope({ state, scopeState, role, options = {}, ex
     const pair2 = extractPair(row, dataset.detected.attr2, dataset.detected.opt2);
     const pairs = [pair1, pair2].filter((pair) => pair.complete);
 
-    if (!rowPassesAttributeFilter(pairs, filterAttrNorm, filterOptionSet)) {
+    if (!rowPassesAttributeFilter(pairs, filterAttrNorm, filterOptionSet, filterAttrNorm2, filterOptionSet2)) {
       return;
     }
 
@@ -63,7 +69,23 @@ export function mapCatalogValuesToOptions(catalog, attrNorm) {
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
-function rowPassesAttributeFilter(pairs, filterAttrNorm, filterOptionSet) {
+function rowPassesAttributeFilter(pairs, filterAttrNorm, filterOptionSet, filterAttrNorm2, filterOptionSet2) {
+  if (!filterAttrNorm && !filterAttrNorm2) {
+    return true;
+  }
+
+  if (!passesSingleFilter(pairs, filterAttrNorm, filterOptionSet)) {
+    return false;
+  }
+
+  if (!passesSingleFilter(pairs, filterAttrNorm2, filterOptionSet2)) {
+    return false;
+  }
+
+  return true;
+}
+
+function passesSingleFilter(pairs, filterAttrNorm, filterOptionSet) {
   if (!filterAttrNorm) {
     return true;
   }

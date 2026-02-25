@@ -1,5 +1,17 @@
 import { normalizeValue } from "../../core/normalize.js";
 
+function getBulkSourceCatalog(scopeState) {
+  return scopeState.bulkSourceCatalog || scopeState.sourceCatalog || new Map();
+}
+
+function getBulkTargetCatalog(scopeState) {
+  return scopeState.bulkTargetCatalog || scopeState.targetCatalog || new Map();
+}
+
+function getRuleSourceCatalog(scopeState) {
+  return scopeState.sourceCatalog || new Map();
+}
+
 export function addSynonymRuleRow({
   scopeEl,
   initialValue = {},
@@ -76,10 +88,16 @@ export function rebuildScopeBulkControls({
     return;
   }
 
-  const sourceOptions = mapCatalogAttributesToOptions(scopeState.sourceCatalog);
-  const targetOptions = mapCatalogAttributesToOptions(scopeState.targetCatalog);
-  sourceEl.disabled = sourceOptions.length === 0;
-  targetEl.disabled = targetOptions.length === 0;
+  const addRuleBtn = scopeEl.querySelector("[data-action='add-rule-row']");
+  const hasSourceAttributes = (scopeState.sourceCatalog?.size || 0) > 0;
+
+  const sourceOptions = mapCatalogAttributesToOptions(getBulkSourceCatalog(scopeState));
+  const targetOptions = mapCatalogAttributesToOptions(getBulkTargetCatalog(scopeState));
+  sourceEl.disabled = !hasSourceAttributes || sourceOptions.length === 0;
+  targetEl.disabled = !hasSourceAttributes || targetOptions.length === 0;
+  if (addRuleBtn) {
+    addRuleBtn.disabled = !hasSourceAttributes;
+  }
 
   updateSelectOptions(sourceEl, sourceOptions, "Select Source Attr", sourceEl.value);
   updateSelectOptions(targetEl, targetOptions, "Select Target Attr", targetEl.value);
@@ -90,8 +108,7 @@ export function updateScopeBulkButtonState({
   scopeEl,
   scopeState,
   getScopeElement,
-  getScopeAction,
-  mapCatalogValuesToOptions
+  getScopeAction
 }) {
   const sourceEl = getScopeElement(scopeEl, "bulkSourceAttr");
   const targetEl = getScopeElement(scopeEl, "bulkTargetAttr");
@@ -100,12 +117,16 @@ export function updateScopeBulkButtonState({
     return;
   }
 
+  if ((scopeState.sourceCatalog?.size || 0) === 0) {
+    bulkBtn.disabled = true;
+    return;
+  }
+
   const sourceAttr = String(sourceEl.value || "");
   const targetAttr = String(targetEl.value || "");
   const hasSourceValues = sourceAttr
-    ? mapCatalogValuesToOptions(scopeState.sourceCatalog, sourceAttr).length > 0
+    ? mapCatalogValuesToOptions(getBulkSourceCatalog(scopeState), sourceAttr).length > 0
     : false;
-
   bulkBtn.disabled = !(sourceAttr && targetAttr && hasSourceValues);
 }
 
@@ -133,13 +154,13 @@ export function handleScopeBulkAddRules({
     return;
   }
 
-  const sourceOptions = mapCatalogValuesToOptions(scopeState.sourceCatalog, sourceAttr);
+  const sourceOptions = mapCatalogValuesToOptions(getBulkSourceCatalog(scopeState), sourceAttr);
   if (sourceOptions.length === 0) {
     showAlert("No source options available for the selected bulk source attribute.", "error");
     return;
   }
 
-  const targetValues = scopeState.targetCatalog.get(targetAttr)?.values || new Map();
+  const targetValues = getBulkTargetCatalog(scopeState).get(targetAttr)?.values || new Map();
   let unresolved = 0;
 
   sourceOptions.forEach((option) => {
@@ -160,7 +181,7 @@ export function handleScopeBulkAddRules({
   if (unresolved > 0) {
     showAlert(`Added ${sourceOptions.length} bulk rules. ${unresolved} rows need Target Value selection.`, "warn");
   } else {
-    showAlert(`Added ${sourceOptions.length} bulk rules for all visible options.`, "success");
+    showAlert(`Added ${sourceOptions.length} bulk rules for all source options.`, "success");
   }
 }
 
@@ -203,15 +224,20 @@ export function refreshSynonymRuleRow({
   const targetAttrValue = initialValue ? String(initialValue.targetAttributeName || "") : targetAttrEl.value;
   const targetValueValue = initialValue ? String(initialValue.targetValue || "") : targetValueEl.value;
 
-  const sourceAttributeOptions = mapCatalogAttributesToOptions(scopeState.sourceCatalog);
+  const sourceCatalog = getRuleSourceCatalog(scopeState);
+  const sourceAttributeOptions = mapCatalogAttributesToOptions(sourceCatalog);
   updateSelectOptions(sourceAttrEl, sourceAttributeOptions, "Select Attribute", normalizeValue(sourceAttrValue));
-  const sourceValueOptions = mapCatalogValuesToOptions(scopeState.sourceCatalog, sourceAttrEl.value);
+  const sourceValueOptions = mapCatalogValuesToOptions(sourceCatalog, sourceAttrEl.value);
   updateSelectOptions(sourcePatternEl, sourceValueOptions, "Select Source Pattern", normalizeValue(sourcePatternValue));
 
   const targetAttributeOptions = mapCatalogAttributesToOptions(scopeState.targetCatalog);
   updateSelectOptions(targetAttrEl, targetAttributeOptions, "Select Target Attribute", normalizeValue(targetAttrValue));
   const targetValueOptions = mapCatalogValuesToOptions(scopeState.targetCatalog, targetAttrEl.value);
   updateSelectOptions(targetValueEl, targetValueOptions, "Select Target Value", normalizeValue(targetValueValue));
+
+  const hasSourceAttributes = sourceCatalog.size > 0;
+  targetAttrEl.disabled = !hasSourceAttributes || targetAttributeOptions.length === 0;
+  targetValueEl.disabled = !hasSourceAttributes || targetValueOptions.length === 0;
 }
 
 export function readInputValue(row, field) {

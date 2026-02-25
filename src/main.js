@@ -8,8 +8,8 @@ import { parseTsv } from "./features/parser/parseTsv.js";
 import { detectColumns } from "./features/parser/detectColumns.js";
 
 import { createScopeUiController } from "./features/synonym/scopeUi.js";
-import { readSynonymRulesFromUi } from "./features/synonym/ruleReader.js";
-import { preprocessSynonymRules } from "./features/synonym/ruleEngine.js";
+import { readSynonymRulesFromUiDetailed } from "./features/synonym/ruleReader.js";
+import { preprocessSynonymRulesDetailed } from "./features/synonym/ruleEngine.js";
 
 import { extractPair } from "./features/matching/targetIndex.js";
 import { runMatchingRows } from "./features/matching/matcher.js";
@@ -84,12 +84,14 @@ function runMatching() {
 
   scopeUi.syncScopeFilterStateFromUi();
 
-  const rawSynonymRules = readSynonymRulesFromUi({
+  const synonymRuleRead = readSynonymRulesFromUiDetailed({
     dom,
     getScopeState: scopeUi.getScopeState,
     getScopeElement: scopeUi.getScopeElement
   });
-  const synonymMap = preprocessSynonymRules(rawSynonymRules);
+  const synonymRulePrep = preprocessSynonymRulesDetailed(synonymRuleRead.rules);
+  const synonymMap = synonymRulePrep.synonymMap;
+  const synonymWarnings = [...synonymRuleRead.warnings, ...synonymRulePrep.warnings];
 
   state.results = runMatchingRows({
     transfer: state.transfer,
@@ -100,6 +102,19 @@ function runMatching() {
   });
 
   renderResults({ state, dom });
+
+  if (synonymWarnings.length > 0) {
+    const preview = synonymWarnings.slice(0, 2).join(" | ");
+    const overflowSuffix = synonymWarnings.length > 2
+      ? ` (+${synonymWarnings.length - 2} more)`
+      : "";
+    showAlert(
+      `Matching completed: ${state.results.length} rows processed. Synonym warnings: ${preview}${overflowSuffix}`,
+      "warn"
+    );
+    return;
+  }
+
   showAlert(`Matching completed: ${state.results.length} rows processed.`, "success");
 }
 
