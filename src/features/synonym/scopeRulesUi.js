@@ -124,10 +124,7 @@ export function updateScopeBulkButtonState({
 
   const sourceAttr = String(sourceEl.value || "");
   const targetAttr = String(targetEl.value || "");
-  const hasSourceValues = sourceAttr
-    ? mapCatalogValuesToOptions(getBulkSourceCatalog(scopeState), sourceAttr).length > 0
-    : false;
-  bulkBtn.disabled = !(sourceAttr && targetAttr && hasSourceValues);
+  bulkBtn.disabled = !(sourceAttr && targetAttr);
 }
 
 export function handleScopeBulkAddRules({

@@ -44,9 +44,7 @@ function parseDataset(kind) {
   clearAlert();
   const isTransfer = kind === "transfer";
   const input = isTransfer ? dom.transferInput.value : dom.targetInput.value;
-  const parseWithoutHeader = isTransfer
-    ? Boolean(dom.transferNoHeader && dom.transferNoHeader.checked)
-    : Boolean(dom.targetNoHeader && dom.targetNoHeader.checked);
+  const parseWithoutHeader = true;
 
   try {
     const parsed = parseTsv(input, { noHeader: parseWithoutHeader });

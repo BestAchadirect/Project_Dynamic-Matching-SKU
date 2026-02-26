@@ -23,11 +23,8 @@
           <h2>transfer_sku</h2>
           <button id="parseTransferBtn" class="btn btn-primary" type="button">Parse</button>
         </div>
-        <label class="toggle-row">
-          <input id="transferNoHeader" type="checkbox">
-          Parse without header (apply default header template)
-        </label>
-        <textarea id="transferInput" class="input-area" placeholder="Paste transfer_sku TSV with headers (or enable no-header mode)"></textarea>
+        <label class="toggle-row">Parse without header (default template applied)</label>
+        <textarea id="transferInput" class="input-area" placeholder="Paste transfer_sku TSV (no header). Default header template will be applied."></textarea>
         <div id="transferMeta" class="meta"></div>
         <div id="transferPreview" class="preview-wrap"></div>
       </section>
@@ -37,11 +34,8 @@
           <h2>new_sku</h2>
           <button id="parseTargetBtn" class="btn btn-primary" type="button">Parse</button>
         </div>
-        <label class="toggle-row">
-          <input id="targetNoHeader" type="checkbox">
-          Parse without header (apply default header template)
-        </label>
-        <textarea id="targetInput" class="input-area" placeholder="Paste new_sku TSV with headers (or enable no-header mode)"></textarea>
+        <label class="toggle-row">Parse without header (default template applied)</label>
+        <textarea id="targetInput" class="input-area" placeholder="Paste new_sku TSV (no header). Default header template will be applied."></textarea>
         <div id="targetMeta" class="meta"></div>
         <div id="targetPreview" class="preview-wrap"></div>
       </section>

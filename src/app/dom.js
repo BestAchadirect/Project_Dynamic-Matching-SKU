@@ -5,8 +5,6 @@ export const dom = {
   synonymScopesContainer: document.getElementById("synonymScopesContainer"),
   parseTransferBtn: document.getElementById("parseTransferBtn"),
   parseTargetBtn: document.getElementById("parseTargetBtn"),
-  transferNoHeader: document.getElementById("transferNoHeader"),
-  targetNoHeader: document.getElementById("targetNoHeader"),
   runBtn: document.getElementById("runBtn"),
   copyBtn: document.getElementById("copyBtn"),
   downloadCsvBtn: document.getElementById("downloadCsvBtn"),

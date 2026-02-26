@@ -52,8 +52,11 @@ export function createSynonymScopeElement(scopeId) {
 
       <div class="synonym-action-bar">
         <div class="synonym-action-info">
-          <div class="meta" data-field="scopeInfo"></div>
-          <div class="action-hint">4. Add synonym rules or bulk map options.</div>
+          <div class="scope-info-card" data-field="scopeInfo"></div>
+          <div class="action-hint">
+            <span class="action-step">Step 4</span>
+            <span>Build synonym rules or bulk map options.</span>
+          </div>
         </div>
         <div class="synonym-action-controls">
           <div class="filter-group">
