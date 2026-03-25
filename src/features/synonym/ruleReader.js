@@ -29,8 +29,8 @@ export function readSynonymRulesFromUiDetailed({ dom, getScopeState, getScopeEle
         return;
       }
 
-      if (!["EXACT", "CONTAINS", "REGEX"].includes(matchType)) {
-        const warning = `[Synonym] Invalid match type on row ${rowCounter}. Defaulting to EXACT.`;
+      if (matchType !== "EXACT") {
+        const warning = `[Synonym] Unsupported match type on row ${rowCounter}. Defaulting to EXACT.`;
         warnings.push(warning);
         console.warn(warning);
         matchType = "EXACT";

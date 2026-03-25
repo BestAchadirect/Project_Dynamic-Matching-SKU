@@ -68,6 +68,7 @@ export function createSynonymScopeElement(scopeId) {
             <select class="synonym-filter-select" data-field="bulkTargetAttr"></select>
           </div>
           <button class="btn btn-secondary" data-action="bulk-add-rules" type="button">Bulk Add</button>
+          <button class="btn btn-secondary" data-action="clear-all-rules" type="button">Clear Rules</button>
           <button class="btn btn-primary" data-action="add-rule-row" type="button">Add Rule</button>
         </div>
       </div>
@@ -76,6 +77,7 @@ export function createSynonymScopeElement(scopeId) {
         <table class="synonym-table">
           <thead>
             <tr>
+              <th style="width: 44px;"></th>
               <th>Source Attribute</th>
               <th>Source Pattern</th>
               <th>Target Attribute</th>

@@ -1,5 +1,7 @@
 import { normalizeValue } from "../../core/normalize.js";
 
+let synonymRuleInputSeq = 1;
+
 function getBulkSourceCatalog(scopeState) {
   return scopeState.bulkSourceCatalog || scopeState.sourceCatalog || new Map();
 }
@@ -10,6 +12,26 @@ function getBulkTargetCatalog(scopeState) {
 
 function getRuleSourceCatalog(scopeState) {
   return scopeState.sourceCatalog || new Map();
+}
+
+function updateInputDatalistOptions(row, inputEl, options, preferredValue) {
+  const listId = inputEl.getAttribute("list");
+  if (listId) {
+    const listEl = row.querySelector(`datalist[id='${listId}']`);
+    if (listEl) {
+      while (listEl.firstChild) {
+        listEl.removeChild(listEl.firstChild);
+      }
+      (options || []).forEach((option) => {
+        const optionEl = document.createElement("option");
+        optionEl.value = option.label || option.value;
+        listEl.appendChild(optionEl);
+      });
+    }
+  }
+
+  const resolved = preferredValue == null ? "" : String(preferredValue).trim();
+  inputEl.value = resolved;
 }
 
 export function addSynonymRuleRow({
@@ -27,16 +49,37 @@ export function addSynonymRuleRow({
   }
 
   const row = document.createElement("tr");
+  const rowSeq = synonymRuleInputSeq;
+  synonymRuleInputSeq += 1;
+  const sourcePatternListId = `sourcePatternList_${rowSeq}`;
+  const targetValueListId = `targetValueList_${rowSeq}`;
+  row.draggable = true;
   row.innerHTML = `
-    <td><select class="synonym-select" data-field="attributeName"></select></td>
-    <td><select class="synonym-select" data-field="sourcePattern"></select></td>
-    <td><select class="synonym-select" data-field="targetAttributeName"></select></td>
-    <td><select class="synonym-select" data-field="targetValue"></select></td>
     <td>
-      <select class="synonym-select" data-field="matchType">
+      <button class="btn-icon row-drag-handle" data-action="drag-row" type="button" title="Drag to reorder rules" aria-label="Drag to reorder rules">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="9" y1="6" x2="9" y2="6"></line>
+          <line x1="9" y1="12" x2="9" y2="12"></line>
+          <line x1="9" y1="18" x2="9" y2="18"></line>
+          <line x1="15" y1="6" x2="15" y2="6"></line>
+          <line x1="15" y1="12" x2="15" y2="12"></line>
+          <line x1="15" y1="18" x2="15" y2="18"></line>
+        </svg>
+      </button>
+    </td>
+    <td><select class="synonym-select" data-field="attributeName"></select></td>
+    <td>
+      <input class="synonym-select" data-field="sourcePattern" list="${sourcePatternListId}" placeholder="Paste or type Source Pattern" />
+      <datalist id="${sourcePatternListId}"></datalist>
+    </td>
+    <td><select class="synonym-select" data-field="targetAttributeName"></select></td>
+    <td>
+      <input class="synonym-select" data-field="targetValue" list="${targetValueListId}" placeholder="Paste or type Target Value" />
+      <datalist id="${targetValueListId}"></datalist>
+    </td>
+    <td>
+      <select class="synonym-select" data-field="matchType" disabled>
         <option value="EXACT">EXACT</option>
-        <option value="CONTAINS">CONTAINS</option>
-        <option value="REGEX">REGEX</option>
       </select>
     </td>
     <td>
@@ -52,11 +95,11 @@ export function addSynonymRuleRow({
 
   const matchTypeEl = row.querySelector("[data-field='matchType']");
   if (matchTypeEl) {
-    const desired = String(initialValue.matchType || "EXACT").toUpperCase();
-    matchTypeEl.value = ["EXACT", "CONTAINS", "REGEX"].includes(desired) ? desired : "EXACT";
+    matchTypeEl.value = "EXACT";
   }
 
   refreshSynonymRuleRow(scopeEl, getScopeState(scopeEl), row, initialValue);
+  return row;
 }
 
 export function resetScopeSynonymTable({
@@ -161,14 +204,16 @@ export function handleScopeBulkAddRules({
   let unresolved = 0;
 
   sourceOptions.forEach((option) => {
-    const preferredTarget = targetValues.has(option.value) ? option.value : "";
+    const preferredTarget = targetValues.has(option.value)
+      ? String(targetValues.get(option.value) || option.label || option.value)
+      : "";
     if (!preferredTarget) {
       unresolved += 1;
     }
 
     addSynonymRuleRow(scopeEl, {
       attributeName: sourceAttr,
-      sourcePattern: option.value,
+      sourcePattern: option.label || option.value,
       targetAttributeName: targetAttr,
       targetValue: preferredTarget,
       matchType: "EXACT"
@@ -225,16 +270,17 @@ export function refreshSynonymRuleRow({
   const sourceAttributeOptions = mapCatalogAttributesToOptions(sourceCatalog);
   updateSelectOptions(sourceAttrEl, sourceAttributeOptions, "Select Attribute", normalizeValue(sourceAttrValue));
   const sourceValueOptions = mapCatalogValuesToOptions(sourceCatalog, sourceAttrEl.value);
-  updateSelectOptions(sourcePatternEl, sourceValueOptions, "Select Source Pattern", normalizeValue(sourcePatternValue));
+  updateInputDatalistOptions(row, sourcePatternEl, sourceValueOptions, sourcePatternValue);
 
   const targetAttributeOptions = mapCatalogAttributesToOptions(scopeState.targetCatalog);
   updateSelectOptions(targetAttrEl, targetAttributeOptions, "Select Target Attribute", normalizeValue(targetAttrValue));
   const targetValueOptions = mapCatalogValuesToOptions(scopeState.targetCatalog, targetAttrEl.value);
-  updateSelectOptions(targetValueEl, targetValueOptions, "Select Target Value", normalizeValue(targetValueValue));
+  updateInputDatalistOptions(row, targetValueEl, targetValueOptions, targetValueValue);
 
   const hasSourceAttributes = sourceCatalog.size > 0;
   targetAttrEl.disabled = !hasSourceAttributes || targetAttributeOptions.length === 0;
-  targetValueEl.disabled = !hasSourceAttributes || targetValueOptions.length === 0;
+  sourcePatternEl.disabled = !hasSourceAttributes || !sourceAttrEl.value;
+  targetValueEl.disabled = !hasSourceAttributes || !targetAttrEl.value;
 }
 
 export function readInputValue(row, field) {

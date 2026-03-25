@@ -432,6 +432,19 @@ th {
   border-bottom: 1px solid #edf2f7;
 }
 
+.synonym-table tr[draggable="true"] {
+  cursor: default;
+}
+
+.synonym-table tr.is-dragging {
+  opacity: 0.55;
+  background: #e6fffa;
+}
+
+.synonym-table tbody.is-dragging-active tr:not(.is-dragging) {
+  transition: transform 0.12s ease;
+}
+
 .synonym-select {
   border: 1px solid #e2e8f0;
   background: #fff;
@@ -463,6 +476,20 @@ th {
 .btn-icon:hover {
   background: #fee2e2;
   color: #ef4444;
+}
+
+.row-drag-handle {
+  color: #64748b;
+  cursor: grab;
+}
+
+.row-drag-handle:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.row-drag-handle:active {
+  cursor: grabbing;
 }
 
 .section-summary-bar {

@@ -36,7 +36,12 @@ import {
 } from "./scopeContext.js";
 import {
   handleSynonymScopesClick as handleSynonymScopesClickHelper,
-  handleSynonymScopesChange as handleSynonymScopesChangeHelper
+  handleSynonymScopesChange as handleSynonymScopesChangeHelper,
+  handleSynonymScopesPaste as handleSynonymScopesPasteHelper,
+  handleSynonymScopesDragStart as handleSynonymScopesDragStartHelper,
+  handleSynonymScopesDragOver as handleSynonymScopesDragOverHelper,
+  handleSynonymScopesDrop as handleSynonymScopesDropHelper,
+  handleSynonymScopesDragEnd as handleSynonymScopesDragEndHelper
 } from "./scopeEvents.js";
 import { normalizeFilterDataset } from "./scopeState.js";
 
@@ -61,7 +66,7 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
   }
 
   function addSynonymRuleRow(scopeEl, initialValue = {}) {
-    addSynonymRuleRowHelper({
+    return addSynonymRuleRowHelper({
       scopeEl,
       initialValue,
       getScopeElement,
@@ -354,6 +359,7 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
       getScopeState,
       updateSynonymGlobalSummary,
       addSynonymRuleRow,
+      resetScopeSynonymTable,
       updateScopeTableVisibility,
       handleScopeBulkAddRules
     });
@@ -370,11 +376,45 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
     });
   }
 
+  function handleSynonymScopesPaste(event) {
+    handleSynonymScopesPasteHelper({
+      event,
+      getScopeState,
+      addSynonymRuleRow,
+      refreshSynonymRuleRow,
+      updateSynonymGlobalSummary
+    });
+  }
+
+  function handleSynonymScopesDragStart(event) {
+    handleSynonymScopesDragStartHelper({ event });
+  }
+
+  function handleSynonymScopesDragOver(event) {
+    handleSynonymScopesDragOverHelper({ event });
+  }
+
+  function handleSynonymScopesDrop(event) {
+    handleSynonymScopesDropHelper({ event });
+  }
+
+  function handleSynonymScopesDragEnd(event) {
+    handleSynonymScopesDragEndHelper({
+      event,
+      updateSynonymGlobalSummary
+    });
+  }
+
   return {
     initializeSynonymTable,
     addSynonymMasterScope,
     handleSynonymScopesClick,
     handleSynonymScopesChange,
+    handleSynonymScopesPaste,
+    handleSynonymScopesDragStart,
+    handleSynonymScopesDragOver,
+    handleSynonymScopesDrop,
+    handleSynonymScopesDragEnd,
     rebuildSynonymContext,
     syncScopeFilterStateFromUi,
     getScopeState,

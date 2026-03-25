@@ -31,6 +31,11 @@ attachEvents(dom, {
   onAddMasterScope: () => scopeUi.addSynonymMasterScope(),
   onSynonymScopesClick: scopeUi.handleSynonymScopesClick,
   onSynonymScopesChange: scopeUi.handleSynonymScopesChange,
+  onSynonymScopesPaste: scopeUi.handleSynonymScopesPaste,
+  onSynonymScopesDragStart: scopeUi.handleSynonymScopesDragStart,
+  onSynonymScopesDragOver: scopeUi.handleSynonymScopesDragOver,
+  onSynonymScopesDrop: scopeUi.handleSynonymScopesDrop,
+  onSynonymScopesDragEnd: scopeUi.handleSynonymScopesDragEnd,
   onRunMatching: runMatching,
   onCopyResultsAsTsv: () => copyResultsAsTsv({ state, showAlert }),
   onDownloadResultsAsCsv: () => downloadResultsAsCsv({ state, showAlert })

@@ -46,14 +46,11 @@ Each rule contains:
 - Source Pattern
 - Target Attribute
 - Target Value
-- Match Type (`EXACT`, `CONTAINS`, `REGEX`)
+- Match Type (`EXACT` only)
 
-Priority order:
-1. `EXACT`
-2. `CONTAINS`
-3. `REGEX`
-
-If multiple rules match in the same priority, the first rule is used.
+Rules are evaluated top-to-bottom within each scope. Use drag-and-drop on the rule rows to reorder priority.
+For bulk mapping from Excel, paste two columns directly into a `Source Pattern` or `Target Value` cell:
+`Source Pattern<TAB>Target Value` (multiple rows supported).
 
 ## Parse Without Header
 When `Parse without header` is enabled, this default header template is applied by column position:
