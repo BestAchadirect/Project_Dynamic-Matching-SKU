@@ -141,6 +141,7 @@ export function updateSelectOptions(selectEl, options, placeholder, preferredVal
     const optionEl = document.createElement("option");
     optionEl.value = option.value;
     optionEl.textContent = option.label;
+    optionEl.disabled = Boolean(option.disabled);
     selectEl.appendChild(optionEl);
   });
 

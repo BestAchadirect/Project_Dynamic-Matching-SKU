@@ -2,6 +2,7 @@ export const dom = {
   transferInput: document.getElementById("transferInput"),
   targetInput: document.getElementById("targetInput"),
   addMasterScopeBtn: document.getElementById("addMasterScopeBtn"),
+  removeAllMasterScopesBtn: document.getElementById("removeAllMasterScopesBtn"),
   synonymScopesContainer: document.getElementById("synonymScopesContainer"),
   parseTransferBtn: document.getElementById("parseTransferBtn"),
   parseTargetBtn: document.getElementById("parseTargetBtn"),

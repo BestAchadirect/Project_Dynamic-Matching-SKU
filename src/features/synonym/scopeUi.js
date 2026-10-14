@@ -29,6 +29,7 @@ import {
   getScopeState as getScopeStateContext,
   initializeSynonymTable as initializeSynonymTableContext,
   addSynonymMasterScope as addSynonymMasterScopeContext,
+  removeAllSynonymMasterScopes as removeAllSynonymMasterScopesContext,
   rebuildSynonymContext as rebuildSynonymContextContext,
   ensureTransferMasterScopes as ensureTransferMasterScopesContext,
   scopeHasConfiguredRules as scopeHasConfiguredRulesContext,
@@ -43,7 +44,7 @@ import {
   handleSynonymScopesDrop as handleSynonymScopesDropHelper,
   handleSynonymScopesDragEnd as handleSynonymScopesDragEndHelper
 } from "./scopeEvents.js";
-import { normalizeFilterDataset } from "./scopeState.js";
+import { normalizeFilterDataset, buildTargetMasterOptionsForScope } from "./scopeState.js";
 
 export function createScopeUiController({ state, dom, showAlert, clearAlert, extractPair }) {
   function getScopeState(scopeEl) {
@@ -148,7 +149,7 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
       return;
     }
 
-    const options = state.synonymContext.targetMasterChoices || [];
+    const options = buildTargetMasterOptionsForScope(state.synonymContext, scopeState.id);
     const enabled = Boolean(state.masterMode && state.target && state.target.detected.master);
 
     updateSelectOptions(selectEl, options, "Same as Source", scopeState.selectedTargetMaster);
@@ -288,6 +289,13 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
     updateScopeInfo(scopeEl, scopeState);
   }
 
+  function refreshTargetMasterAvailability() {
+    dom.synonymScopesContainer.querySelectorAll(".synonym-scope").forEach((element) => {
+      const scope = getScopeState(element);
+      if (scope) renderScopeTargetMasterFilter(element, scope);
+    });
+  }
+
   function refreshAllSynonymScopes() {
     const scopes = Array.from(dom.synonymScopesContainer.querySelectorAll(".synonym-scope"));
     scopes.forEach((scopeEl) => {
@@ -314,6 +322,21 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
       refreshSynonymScope,
       updateSynonymGlobalSummary
     });
+    refreshTargetMasterAvailability();
+  }
+
+  function removeAllSynonymMasterScopes() {
+    const removedCount = removeAllSynonymMasterScopesContext({
+      state, dom,
+      confirmRemoval: (count) => window.confirm(
+        "Remove all " + count + " master code scopes?\n\nThis will also remove their synonym rules and filters. This cannot be undone."
+      ),
+      updateSynonymGlobalSummary
+    });
+    if (removedCount > 0) {
+      clearAlert();
+      showAlert("Removed " + removedCount + " master code scopes.", "success");
+    }
   }
 
   function ensureTransferMasterScopes() {
@@ -361,7 +384,8 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
       addSynonymRuleRow,
       resetScopeSynonymTable,
       updateScopeTableVisibility,
-      handleScopeBulkAddRules
+      handleScopeBulkAddRules,
+      refreshTargetMasterAvailability
     });
   }
 
@@ -370,6 +394,7 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
       event,
       getScopeState,
       refreshSynonymScope,
+      refreshTargetMasterAvailability,
       readMultiSelectValues,
       updateScopeBulkButtonState,
       refreshSynonymRuleRow
@@ -408,6 +433,7 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
   return {
     initializeSynonymTable,
     addSynonymMasterScope,
+    removeAllSynonymMasterScopes,
     handleSynonymScopesClick,
     handleSynonymScopesChange,
     handleSynonymScopesPaste,

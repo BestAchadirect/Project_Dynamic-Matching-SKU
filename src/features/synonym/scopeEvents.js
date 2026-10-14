@@ -25,7 +25,8 @@ export function handleSynonymScopesClick({
   addSynonymRuleRow,
   resetScopeSynonymTable,
   updateScopeTableVisibility,
-  handleScopeBulkAddRules
+  handleScopeBulkAddRules,
+  refreshTargetMasterAvailability
 }) {
   const target = event.target;
   if (!(target instanceof HTMLElement)) {
@@ -46,6 +47,7 @@ export function handleSynonymScopesClick({
   if (action === "remove-master-scope") {
     state.synonymContext.scopes.delete(scopeState.id);
     scopeEl.remove();
+    refreshTargetMasterAvailability();
     updateSynonymGlobalSummary();
     return;
   }
@@ -89,6 +91,7 @@ export function handleSynonymScopesChange({
   event,
   getScopeState,
   refreshSynonymScope,
+  refreshTargetMasterAvailability,
   readMultiSelectValues,
   updateScopeBulkButtonState,
   refreshSynonymRuleRow
@@ -121,6 +124,7 @@ export function handleSynonymScopesChange({
 
   if (field === "targetMasterFilter") {
     scopeState.selectedTargetMaster = String(target.value || "");
+    refreshTargetMasterAvailability();
     refreshSynonymScope(scopeEl, scopeState);
     return;
   }

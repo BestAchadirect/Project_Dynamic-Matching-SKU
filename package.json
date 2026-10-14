@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/parser.test.js && node tests/matching.test.js && node tests/synonym-filter.test.js"
+    "test": "node tests/parser.test.js && node tests/matching.test.js && node tests/synonym-filter.test.js && node tests/scope-clear.test.js && node tests/target-master-availability.test.js"
   }
 }

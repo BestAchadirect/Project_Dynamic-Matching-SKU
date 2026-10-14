@@ -75,6 +75,9 @@ export function updateScopeInfo({
 }
 
 export function updateSynonymGlobalSummary({ state, dom }) {
+  if (dom.removeAllMasterScopesBtn) {
+    dom.removeAllMasterScopesBtn.disabled = state.synonymContext.scopes.size === 0;
+  }
   const bar = dom.synonymSummaryBar;
   if (!bar) {
     return;
