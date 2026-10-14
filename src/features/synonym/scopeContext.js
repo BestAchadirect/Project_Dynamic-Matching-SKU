@@ -59,6 +59,20 @@ export function addSynonymMasterScope({
   updateSynonymGlobalSummary();
 }
 
+export function removeAllSynonymMasterScopes({ state, dom, confirmRemoval, updateSynonymGlobalSummary }) {
+  const ctx = state.synonymContext;
+  const count = ctx.scopes.size;
+  if (count === 0 || !confirmRemoval(count)) return 0;
+
+  ctx.scopes.clear();
+  // Keep cleared scopes empty when the target dataset is parsed.
+  // Parsing transfer_sku again resets this flag for a fresh automatic scope set.
+  ctx.autoMasterScopesApplied = true;
+  dom.synonymScopesContainer.replaceChildren();
+  updateSynonymGlobalSummary();
+  return count;
+}
+
 export function rebuildSynonymContext({
   state,
   addSynonymMasterScope,
@@ -83,7 +97,7 @@ export function rebuildSynonymContext({
     scopeState.selectedFilterOptions2 = new Set(scopeState.selectedFilterOptions2 || []);
   });
 
-  if (ctx.scopes.size === 0) {
+  if (ctx.scopes.size === 0 && !ctx.autoMasterScopesApplied) {
     addSynonymMasterScope();
   }
 
