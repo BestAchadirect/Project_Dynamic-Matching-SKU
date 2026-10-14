@@ -29,6 +29,7 @@ import {
   getScopeState as getScopeStateContext,
   initializeSynonymTable as initializeSynonymTableContext,
   addSynonymMasterScope as addSynonymMasterScopeContext,
+  removeAllSynonymMasterScopes as removeAllSynonymMasterScopesContext,
   rebuildSynonymContext as rebuildSynonymContextContext,
   ensureTransferMasterScopes as ensureTransferMasterScopesContext,
   scopeHasConfiguredRules as scopeHasConfiguredRulesContext,
@@ -316,6 +317,20 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
     });
   }
 
+  function removeAllSynonymMasterScopes() {
+    const removedCount = removeAllSynonymMasterScopesContext({
+      state, dom,
+      confirmRemoval: (count) => window.confirm(
+        "Remove all " + count + " master code scopes?\n\nThis will also remove their synonym rules and filters. This cannot be undone."
+      ),
+      updateSynonymGlobalSummary
+    });
+    if (removedCount > 0) {
+      clearAlert();
+      showAlert("Removed " + removedCount + " master code scopes.", "success");
+    }
+  }
+
   function ensureTransferMasterScopes() {
     ensureTransferMasterScopesContext({
       state,
@@ -408,6 +423,7 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
   return {
     initializeSynonymTable,
     addSynonymMasterScope,
+    removeAllSynonymMasterScopes,
     handleSynonymScopesClick,
     handleSynonymScopesChange,
     handleSynonymScopesPaste,
