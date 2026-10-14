@@ -29,6 +29,7 @@ const scopeUi = createScopeUiController({
 attachEvents(dom, {
   onParseDataset: parseDataset,
   onAddMasterScope: () => scopeUi.addSynonymMasterScope(),
+  onRemoveAllMasterScopes: () => scopeUi.removeAllSynonymMasterScopes(),
   onSynonymScopesClick: scopeUi.handleSynonymScopesClick,
   onSynonymScopesChange: scopeUi.handleSynonymScopesChange,
   onSynonymScopesPaste: scopeUi.handleSynonymScopesPaste,
