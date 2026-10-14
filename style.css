@@ -325,6 +325,12 @@ th {
   background: #fff;
 }
 
+/* Native dropdown appearance varies by browser; disabled options also carry an explicit label. */
+.synonym-filter-select option:disabled {
+  color: #9ca3af;
+  background-color: #f3f4f6;
+}
+
 .synonym-filter-select:focus {
   outline: none;
   border-color: var(--primary);
