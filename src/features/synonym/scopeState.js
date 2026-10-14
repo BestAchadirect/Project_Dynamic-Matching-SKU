@@ -130,6 +130,31 @@ export function buildTargetMasterChoices(state) {
 
 }
 
+// Target master assignments are exclusive across scopes; "Same as Source" is always reusable.
+export function isTargetMasterSelectedElsewhere(synonymContext, scopeId, targetMaster) {
+  if (!targetMaster) return false;
+  return Array.from(synonymContext.scopes.values()).some(
+    (scope) => scope.id !== scopeId && scope.selectedTargetMaster === targetMaster
+  );
+}
+
+export function buildTargetMasterOptionsForScope(synonymContext, scopeId) {
+  const selectedHere = synonymContext.scopes.get(scopeId)?.selectedTargetMaster || "";
+  const takenElsewhere = new Set(
+    Array.from(synonymContext.scopes.values())
+      .filter((scope) => scope.id !== scopeId && scope.selectedTargetMaster)
+      .map((scope) => scope.selectedTargetMaster)
+  );
+  return synonymContext.targetMasterChoices.map(({ value, label }) => {
+    const disabled = value !== selectedHere && takenElsewhere.has(value);
+    return {
+      value,
+      label: disabled ? `${label} (Already selected)` : label,
+      disabled
+    };
+  });
+}
+
 export function normalizeFilterDataset(value) {
   const raw = String(value || "target").trim().toLowerCase();
   return raw === "source" ? "source" : "target";
