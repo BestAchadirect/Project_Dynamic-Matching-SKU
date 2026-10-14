@@ -44,7 +44,7 @@ import {
   handleSynonymScopesDrop as handleSynonymScopesDropHelper,
   handleSynonymScopesDragEnd as handleSynonymScopesDragEndHelper
 } from "./scopeEvents.js";
-import { normalizeFilterDataset } from "./scopeState.js";
+import { normalizeFilterDataset, buildTargetMasterOptionsForScope } from "./scopeState.js";
 
 export function createScopeUiController({ state, dom, showAlert, clearAlert, extractPair }) {
   function getScopeState(scopeEl) {
@@ -149,7 +149,7 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
       return;
     }
 
-    const options = state.synonymContext.targetMasterChoices || [];
+    const options = buildTargetMasterOptionsForScope(state.synonymContext, scopeState.id);
     const enabled = Boolean(state.masterMode && state.target && state.target.detected.master);
 
     updateSelectOptions(selectEl, options, "Same as Source", scopeState.selectedTargetMaster);
@@ -289,6 +289,13 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
     updateScopeInfo(scopeEl, scopeState);
   }
 
+  function refreshTargetMasterAvailability() {
+    dom.synonymScopesContainer.querySelectorAll(".synonym-scope").forEach((element) => {
+      const scope = getScopeState(element);
+      if (scope) renderScopeTargetMasterFilter(element, scope);
+    });
+  }
+
   function refreshAllSynonymScopes() {
     const scopes = Array.from(dom.synonymScopesContainer.querySelectorAll(".synonym-scope"));
     scopes.forEach((scopeEl) => {
@@ -315,6 +322,7 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
       refreshSynonymScope,
       updateSynonymGlobalSummary
     });
+    refreshTargetMasterAvailability();
   }
 
   function removeAllSynonymMasterScopes() {
@@ -376,7 +384,8 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
       addSynonymRuleRow,
       resetScopeSynonymTable,
       updateScopeTableVisibility,
-      handleScopeBulkAddRules
+      handleScopeBulkAddRules,
+      refreshTargetMasterAvailability
     });
   }
 
@@ -385,6 +394,7 @@ export function createScopeUiController({ state, dom, showAlert, clearAlert, ext
       event,
       getScopeState,
       refreshSynonymScope,
+      refreshTargetMasterAvailability,
       readMultiSelectValues,
       updateScopeBulkButtonState,
       refreshSynonymRuleRow
