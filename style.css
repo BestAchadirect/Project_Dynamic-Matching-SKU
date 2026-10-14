@@ -167,6 +167,14 @@ h2 {
   background: var(--accent-hover);
 }
 
+.btn-danger {
+  background: var(--err);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #991b1b;
+}
+
 .btn-secondary {
   background: var(--secondary);
 }
